@@ -6,13 +6,10 @@ import glob
 import re
 import numpy as np
 
-# Keras
-from keras.applications.imagenet_utils import preprocess_input, decode_predictions
-from keras.models import load_model
-from keras.preprocessing import image
+
 
 # Flask utils
-from flask import Flask, redirect, url_for, request, render_template
+from flask import Flask, redirect, url_for, request, render_template,jsonify
 from werkzeug.utils import secure_filename
 from gevent.pywsgi import WSGIServer
 
@@ -20,35 +17,47 @@ from gevent.pywsgi import WSGIServer
 app = Flask(__name__)
 
 # Model saved with Keras model.save()
-MODEL_PATH = 'models/model_resnet.h5'
-
-# Load your trained model
-model = load_model(MODEL_PATH)
-model._make_predict_function()          # Necessary
-# print('Model loaded. Start serving...')
 
 # You can also use pretrained model from Keras
 # Check https://keras.io/applications/
 #from keras.applications.resnet50 import ResNet50
 #model = ResNet50(weights='imagenet')
 #model.save('')
-print('Model loaded. Check http://127.0.0.1:5000/')
 
 
-def model_predict(img_path, model):
-    img = image.load_img(img_path, target_size=(224, 224))
 
-    # Preprocessing the image
-    x = image.img_to_array(img)
-    # x = np.true_divide(x, 255)
-    x = np.expand_dims(x, axis=0)
+def model_predict(img_path):
+        n= cv2.imread(img_path)
+        k=cv2.cvtColor(n, cv2.COLOR_BGR2GRAY)
+        #(thresh, im_bw) = cv2.threshold(k, 128, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        thresh = 90
+        im_bw = cv2.threshold(k, thresh, 255, cv2.THRESH_BINARY)[1]
+        #j=cv2.bitwise_not(k)
+        #l=cv2.bitwise_not(j,cv2.COLOR_BGR2GRAY)
 
-    # Be careful how your trained model deals with the input
-    # otherwise, it won't make correct prediction!
-    x = preprocess_input(x, mode='caffe')
+          # Run tesseract OCR on image
+        text = pytesseract.image_to_string(im_bw, config=config)
 
-    preds = model.predict(x)
-    return preds
+          # Print recognized text
+       # print(text)
+
+        #print('Original Sentence: %s' % (text))
+
+        patt=re.compile(r'\d{1,2}[ ./-]((J|j)(an|AN)[A-Za-z]*|(F|f)(eb|EB)[A-Za-z]*|(M|m)(AR|ar)[a-z]*|Apr[a-z]*|May[a-z]*|Jun[a-z]*|Jul[a-z]*|Aug[a-z]*|Sep[a-z]*|Oct[a-z]*|Nov[a-z]*|Dec[a-z]*|\d{1,2})[ ./-]?(\d{2,4})+')
+        matches=patt.findall(text)
+        #print(matches)
+        j=0
+        am=[]
+        #dic={}
+        for i in matches:
+            print(i)
+            j=j+1
+            am.append(i)
+            #print(j)
+            #dic[0]=i
+        return am
+    
+    
 
 
 @app.route('/', methods=['GET'])
@@ -74,8 +83,8 @@ def upload():
 
         # Process your result for human
         # pred_class = preds.argmax(axis=-1)            # Simple argmax
-        pred_class = decode_predictions(preds, top=1)   # ImageNet Decode
-        result = str(pred_class[0][0][1])               # Convert to string
+         # ImageNet Decode
+        result = preds              # Convert to string
         return result
     return None
 
