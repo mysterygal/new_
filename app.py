@@ -16,14 +16,6 @@ from gevent.pywsgi import WSGIServer
 # Define a flask app
 app = Flask(__name__)
 
-# Model saved with Keras model.save()
-
-# You can also use pretrained model from Keras
-# Check https://keras.io/applications/
-#from keras.applications.resnet50 import ResNet50
-#model = ResNet50(weights='imagenet')
-#model.save('')
-
 
 
 def model_predict(img_path):
@@ -38,10 +30,7 @@ def model_predict(img_path):
           # Run tesseract OCR on image
         text = pytesseract.image_to_string(im_bw, config=config)
 
-          # Print recognized text
-       # print(text)
-
-        #print('Original Sentence: %s' % (text))
+        
 
         patt=re.compile(r'\d{1,2}[ ./-]((J|j)(an|AN)[A-Za-z]*|(F|f)(eb|EB)[A-Za-z]*|(M|m)(AR|ar)[a-z]*|Apr[a-z]*|May[a-z]*|Jun[a-z]*|Jul[a-z]*|Aug[a-z]*|Sep[a-z]*|Oct[a-z]*|Nov[a-z]*|Dec[a-z]*|\d{1,2})[ ./-]?(\d{2,4})+')
         matches=patt.findall(text)
@@ -79,12 +68,10 @@ def upload():
         f.save(file_path)
 
         # Make prediction
-        preds = model_predict(file_path, model)
+        preds = model_predict(file_path)
 
-        # Process your result for human
-        # pred_class = preds.argmax(axis=-1)            # Simple argmax
-         # ImageNet Decode
-        result = preds              # Convert to string
+        
+        result = jsonify(preds)            
         return result
     return None
 
